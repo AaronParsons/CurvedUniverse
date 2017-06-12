@@ -1,5 +1,6 @@
 import pygame as pg, numpy as np
-import intersect, sys
+import sys
+#import intersect
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -168,11 +169,11 @@ class Maze:
             d.shape = (f.size[0],f.size[1])
         d = np.where(d > d.max()/2, 0, 1)
         return d
-    def intersects(self, curpos, newpos, clip=True):
-        if not clip: return False
-        p1 = self.lines[:,0,:].T
-        p2 = self.lines[:,1,:].T
-        return np.any(intersect.intersects(-curpos, -newpos, p1, p2))
+    #def intersects(self, curpos, newpos, clip=True):
+    #    if not clip: return False
+    #    p1 = self.lines[:,0,:].T
+    #    p2 = self.lines[:,1,:].T
+    #    return np.any(intersect.intersects(-curpos, -newpos, p1, p2))
     def from_img(self, img):
         dx = img[1:] - img[:-1]
         inds = np.where(dx != 0)
@@ -201,7 +202,6 @@ class Maze:
     def fog(self):
         glEnable(GL_FOG)                        # Enable fog
         glFogi(GL_FOG_MODE, GL_LINEAR)          # Set fog settings
-        #glFogfv(GL_FOG_COLOR, (1., 1., 1., 1.))   # Set fog color
         glFogfv(GL_FOG_COLOR, (1., 0., 0., 1.))   # Set fog color
         glFogf(GL_FOG_DENSITY, 0.15)            # Set fog density
         glHint(GL_FOG_HINT, GL_DONT_CARE)       # Set Hint
@@ -228,43 +228,39 @@ def main():
     glMatrixMode(GL_MODELVIEW)
     gluPerspective(45, (float(display[0])/display[1]), 0.1, 50.0)
 
-    #dirt_id   = loadImage('art/dirt.png')
-    stone_id  = loadImage('art/galaxy.png')
-    #stone_id  = loadImage('art/zombie.png')
-    #maze_index = -1
+    galaxy_id  = loadImage('art/galaxy.png')
 
-    #maze = Maze(sys.argv[-1], stone_id)
     maze = Maze()
-    if True:
+    if True: # Add galaxies to the universe
         for i in xrange(0,10,3):
             for j in xrange(0,10,3):
-                w = Wall([i,j], [i+1,j], stone_id)
+                w = Wall([i,j], [i+1,j], galaxy_id)
                 maze.walls.append(w)
-    #cube = Cube(np.array([15.,15,0]))
+
     cubes = []
-    if False:
+    if False: # Add spinning cubes to the universe
         for i in xrange(0,10,3):
             for j in xrange(0,10,3):
                 cubes.append(Cube(np.array([i,j,0])))
-    #cube_pos = np.random.randint(40,size=3)
-    #cube_pos[2] = 0
-    #cube = Cube(cube_pos)
+    # Initial positions
     cam = Camera()
-    cam.turn(.75*np.pi)
+    cam.turn(3.75*np.pi)
     cam.move(np.array([-0.75,-0.5,0]))
 
-    R = 10.
-    def rfunc(d): return R * np.sin(d/R) / d
-    #def rfunc(d): return R * np.sinh(d/R) / d
-    #def rfunc(d): return 1.
+    R = 10. # radius of curvature of the universe
+
+    def rfunc(d):
+        '''Map the actual distance to the effective ang diameter distance.'''
+        return R * np.sin(d/R) / d # closed
+        #return R * np.sinh(d/R) / d # open
+        #return 1. # flat
+
     while True:
         for ev in pg.event.get():
             if ev.type == pg.QUIT:
                 pg.quit(); quit()
-            #elif ev.type == pg.KEYDOWN:
-            #    if   ev.key == pg.K_UP: glRotatef(-1,1,0,0)
         maze.draw_background(display)
-        maze.fog()
+        maze.fog() # draw the reddening; comment out for none
         maze.draw_walls(-cam.pos, rfunc)
         for cube in cubes:
             cube.draw_sides(-cam.pos, rfunc)
